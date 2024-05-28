@@ -33,12 +33,15 @@
       - { question: 'nslcd/ldap-base', vtype: 'string', value: 'dc=example,dc=com' }
 
   - name: Update nsswitch.conf for LDAP support
-    ansible.builtin.lineinfile:
+    lineinfile:
       path: /etc/nsswitch.conf
-      regexp: '^(passwd|group|shadow):.*'
-      line: '\\1: files ldap'
-      state: present
-    when: "'compute_nodes' in group_names"
+      regexp: '^{{ item }}:\s+((?!.*\bldap\b).*)$'
+      line: '{{ item }}: \1 ldap'
+      backrefs: yes
+    loop:
+      - passwd
+      - group
+      - shadow
 
   handlers:
     - name: restart nslcd
