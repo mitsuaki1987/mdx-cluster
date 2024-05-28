@@ -12,9 +12,9 @@
       value: "{{ item.value }}"
     loop:
       - { question: 'slapd/no_configuration', vtype: 'boolean', value: 'false' }
-      - { question: 'slapd/domain', vtype: 'string', value: 'mdx.jp' }
-      - { question: 'slapd/password1', vtype: 'password', value: 'mdxuser1' }
-      - { question: 'slapd/password2', vtype: 'password', value: 'mdxuser1' }
+      - { question: 'slapd/domain', vtype: 'string', value: 'example.com' }
+      - { question: 'slapd/password1', vtype: 'password', value: 'mdxuser2204' }
+      - { question: 'slapd/password2', vtype: 'password', value: 'mdxuser2204' }
     when: "'control_nodes' in group_names"
 
   - name: Reconfigure slapd to apply debconf selections
@@ -33,7 +33,7 @@
     ansible.builtin.lineinfile:
       path: /etc/nslcd.conf
       regexp: '^base\s+.*'
-      line: "base dc=mdx,dc=jp"
+      line: "base dc=example,dc=com"
     notify: restart nslcd
 
   - name: Update nsswitch.conf for LDAP support

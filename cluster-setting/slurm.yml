@@ -81,3 +81,12 @@
         name: slurmd
         state: started
         enabled: yes
+
+- name: Restart munge service on all nodes
+  hosts: all
+  become: yes
+  tasks:
+    - name: Restart munge service
+      service:
+        name: munge
+        state: restarted
