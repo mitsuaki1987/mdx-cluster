@@ -12,9 +12,9 @@
       value: "{{ item.value }}"
     loop:
       - { question: 'slapd/no_configuration', vtype: 'boolean', value: 'false' }
-      - { question: 'slapd/domain', vtype: 'string', value: 'example.com' }
-      - { question: 'slapd/password1', vtype: 'password', value: 'mdxuser2204' }
-      - { question: 'slapd/password2', vtype: 'password', value: 'mdxuser2204' }
+      - { question: 'slapd/domain', vtype: 'string', value: 'mdx.jp' }
+      - { question: 'slapd/password1', vtype: 'password', value: 'mdxuser1' }
+      - { question: 'slapd/password2', vtype: 'password', value: 'mdxuser1' }
     when: "'control_nodes' in group_names"
 
   - name: Reconfigure slapd to apply debconf selections
@@ -22,32 +22,33 @@
       cmd: dpkg-reconfigure -fnoninteractive slapd
     when: "'control_nodes' in group_names"
 
-  - name: Configure LDAP client settings
-    ansible.builtin.debconf:
-      name: nslcd
-      question: "{{ item.question }}"
-      vtype: "{{ item.vtype }}"
-      value: "{{ item.value }}"
-    loop:
-      - { question: 'nslcd/ldap-uris', vtype: 'string', value: "{{ ldap_server_uri }}" }
-      - { question: 'nslcd/ldap-base', vtype: 'string', value: 'dc=example,dc=com' }
+  - name: Update nslcd configuration for uri
+    ansible.builtin.lineinfile:
+      path: /etc/nslcd.conf
+      regexp: '^uri\s+.*'
+      line: "uri {{ ldap_server_uri }}"
+    notify: restart nslcd
+
+  - name: Update nslcd configuration for base
+    ansible.builtin.lineinfile:
+      path: /etc/nslcd.conf
+      regexp: '^base\s+.*'
+      line: "base dc=mdx,dc=jp"
+    notify: restart nslcd
 
   - name: Update nsswitch.conf for LDAP support
-    lineinfile:
+    ansible.builtin.lineinfile:
       path: /etc/nsswitch.conf
-      regexp: '^{{ item }}:\s+((?!.*\bldap\b).*)$'
-      line: '{{ item }}: \1 ldap'
+      regexp: '^(passwd|group|shadow)\s*:.*'
+      line: "\\1: files ldap"
       backrefs: yes
-    loop:
-      - passwd
-      - group
-      - shadow
+      state: present
 
   handlers:
-    - name: restart nslcd
-      ansible.builtin.service:
-        name: nslcd
-        state: restarted
+  - name: restart nslcd
+    ansible.builtin.service:
+      name: nslcd
+      state: restarted
 
 - name: Edit common-session
   hosts: control_nodes
