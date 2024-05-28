@@ -21,6 +21,7 @@
     ansible.builtin.shell:
       cmd: dpkg-reconfigure -fnoninteractive slapd
     when: "'control_nodes' in group_names"
+    ignore_errors: yes
 
   - name: Update nslcd configuration for uri
     ansible.builtin.lineinfile:
@@ -36,13 +37,16 @@
       line: "base dc=example,dc=com"
     notify: restart nslcd
 
-  - name: Update nsswitch.conf for LDAP support
-    ansible.builtin.lineinfile:
+  - name: Add ldap to passwd, group, and shadow if not present
+    lineinfile:
       path: /etc/nsswitch.conf
-      regexp: '^(passwd|group|shadow)\s*:.*'
-      line: "\\1: files ldap"
+      regexp: '^\s*({{ item }}):((?!.*ldap).*)$'
+      line: '\1:\2 ldap'
       backrefs: yes
-      state: present
+    loop:
+      - passwd
+      - group
+      - shadow
 
   handlers:
   - name: restart nslcd
