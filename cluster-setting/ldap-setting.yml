@@ -1,0 +1,57 @@
+---
+- name: Configure LDAP servers and clients using debconf
+  hosts: all
+  become: yes
+
+  tasks:
+  - name: Set debconf selections for slapd on LDAP servers
+    ansible.builtin.debconf:
+      name: slapd
+      question: "{{ item.question }}"
+      vtype: "{{ item.vtype }}"
+      value: "{{ item.value }}"
+    loop:
+      - { question: 'slapd/no_configuration', vtype: 'boolean', value: 'false' }
+      - { question: 'slapd/domain', vtype: 'string', value: 'example.com' }
+      - { question: 'slapd/password1', vtype: 'password', value: 'mdxuser2204' }
+      - { question: 'slapd/password2', vtype: 'password', value: 'mdxuser2204' }
+    when: "'control_nodes' in group_names"
+
+  - name: Reconfigure slapd to apply debconf selections
+    ansible.builtin.shell:
+      cmd: dpkg-reconfigure -fnoninteractive slapd
+    when: "'control_nodes' in group_names"
+
+  - name: Configure LDAP client settings
+    ansible.builtin.debconf:
+      name: nslcd
+      question: "{{ item.question }}"
+      vtype: "{{ item.vtype }}"
+      value: "{{ item.value }}"
+    loop:
+      - { question: 'nslcd/ldap-uris', vtype: 'string', value: "{{ ldap_server_uri }}" }
+      - { question: 'nslcd/ldap-base', vtype: 'string', value: 'dc=example,dc=com' }
+
+  - name: Update nsswitch.conf for LDAP support
+    ansible.builtin.lineinfile:
+      path: /etc/nsswitch.conf
+      regexp: '^(passwd|group|shadow):.*'
+      line: '\\1: files ldap'
+      state: present
+    when: "'compute_nodes' in group_names"
+
+  handlers:
+    - name: restart nslcd
+      ansible.builtin.service:
+        name: nslcd
+        state: restarted
+
+- name: Edit common-session
+  hosts: control_nodes
+  become: yes
+  tasks:
+    - name: Add config for LDAP
+      lineinfile:
+        path: /etc/pam.d/common-session
+        line: "session required pam_mkhomedir.so skel=/etc/skel/ umask=0022"
+        state: present

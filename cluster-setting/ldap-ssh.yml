@@ -38,3 +38,4 @@
         mode: '0755'
       vars:
         control_node_ip: "{{ hostvars[groups['control_nodes'][0]]['ansible_default_ipv4']['address'] }}"
+
