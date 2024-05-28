@@ -9,11 +9,12 @@
   hosts: control_nodes
   become: yes
   tasks:
-    - name: Add export for compute node to /etc/exports
+    - name: Add export for each compute node to /etc/exports
       lineinfile:
         path: /etc/exports
-        line: "/home {{ hostvars[groups['compute_nodes'][0]]['ansible_default_ipv4']['address'] }}(rw,sync,no_root_squash,no_subtree_check)"
+        line: "/home {{ hostvars[item]['ansible_default_ipv4']['address'] }}(rw,sync,no_root_squash,no_subtree_check)"
         state: present
+      loop: "{{ groups['compute_nodes'] }}"
       notify: restart nfs-kernel-server
 
   handlers:
