@@ -1,0 +1,11 @@
+- name: install dependent packages
+  apt:
+    update_cache: yes
+    name:
+    - slurm-wlm
+    - munge
+    - libmunge2
+    - libmunge-dev
+
+- name: apt clean
+  shell: apt clean

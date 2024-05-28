@@ -1,0 +1,30 @@
+#cloud-config
+# see https://ubuntu.com/server/docs/install/autoinstall
+autoinstall:
+  version: 1
+  apt:
+    primary:
+      - arches: [default]
+        uri: "http://ftp.riken.jp/Linux/ubuntu/"
+#  updates: all
+#  packages:
+#    - open-vm-tools
+  storage:
+    layout:
+      name: direct
+  user-data:
+    disable_root: false
+    timezone: Asia/Tokyo
+    chpasswd:
+      list: |
+        root:$6$iaQgiCYtp.s2rOEk$RMxlW0Fm61Uy0ptohjmOjI/vM5c6xOLAxNCZL3KZi6HW0re7tWfK4BD/auShf5v5JxPpEGAZ/Bpoi6zBS4I6p.
+      expire: false
+  identity:
+    hostname: ubuntu-2204
+    username: mdxuser
+    password: '$6$ND1VeV1OQSr89.IZ$vzPWLjyo27GZm6bXK8WqtMgiiYwNKu2cinrETRGYC5uLETwJ26CSB5KvS4s55HvZbcNV/SmgZagEsegJeTBS20'
+  locale: en_US
+  ssh:
+    install-server: true
+  late-commands:
+    - echo 'mdxuser ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/mdxuser && chmod 640 /target/etc/sudoers.d/mdxuser

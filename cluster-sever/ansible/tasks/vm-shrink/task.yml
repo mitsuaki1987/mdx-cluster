@@ -1,0 +1,2 @@
+- name: shrink disks
+  shell: vmware-toolbox-cmd disk shrink /

@@ -1,0 +1,40 @@
+---
+- name: Add LDAP Public Key
+  hosts: control_nodes
+  become: yes
+  tasks:
+    - name: Copy schema file
+      copy:
+        src: add-ldapPublicKey-schema.ldif
+        dest: /tmp/add-ldapPublicKey-schema.ldif
+        owner: mdxuser
+        group: mdxuser
+        mode: '0644'
+
+    - name: Add Public Key schema
+      shell: ldapadd -Y EXTERNAL -H ldapi:/// -f /tmp/add-ldapPublicKey-schema.ldif
+      args:
+        executable: /bin/bash
+      ignore_errors: yes
+
+- name: Add ldapAuthSSH script
+  hosts: control_nodes
+  become: yes
+  tasks:
+    - name: Add config for LDAP
+      blockinfile:
+        path: /etc/ssh/sshd_config
+        block: |
+          # for authorized LDAP via SSH key
+          AuthorizedKeysCommand /usr/bin/ldapAuthSSH.sh
+          AuthorizedKeysCommandUser root
+
+    - name: Add script
+      template:
+        src: ldapAuthSSH.sh.j2
+        dest: /usr/bin/ldapAuthSSH.sh
+        owner: root
+        group: root
+        mode: '0755'
+      vars:
+        control_node_ip: "{{ hostvars[groups['control_nodes'][0]]['ansible_default_ipv4']['address'] }}"

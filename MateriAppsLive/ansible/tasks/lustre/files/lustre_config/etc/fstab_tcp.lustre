@@ -1,0 +1,4 @@
+## LustreFS ##
+172.17.8.40@tcp10:172.17.8.41@tcp10:/fast	/fast		lustre	network=tcp10,flock,noauto,defaults 0 0
+172.17.8.56@tcp10:172.17.8.57@tcp10:/large	/large		lustre	network=tcp10,flock,noauto,defaults 0 0
+##

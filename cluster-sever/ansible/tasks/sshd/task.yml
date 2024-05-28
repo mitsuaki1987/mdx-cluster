@@ -1,0 +1,21 @@
+- name: remove /etc/ssh/sshd_config.d/50-cloud-init.conf
+  become: true
+  file:
+    path: /etc/ssh/sshd_config.d/50-cloud-init.conf
+    state: absent
+
+- name: mkdir /etc/ssh/sshd_config.d
+  become: true
+  file: path=/etc/ssh/sshd_config.d state=directory owner=root group=root mode=0755 
+
+- name: create new sshd config file
+  become: true
+  blockinfile:
+    path: /etc/ssh/sshd_config.d/55-mdx.conf
+    create: yes
+    marker: ""
+    block: |
+      PasswordAuthentication no
+      PubkeyAuthentication yes
+      GSSAPIAuthentication no
+      UseDNS no

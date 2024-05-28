@@ -1,0 +1,22 @@
+- name: ubuntu-materiapps-live-desktop provisioner
+  hosts: default
+  become: yes
+
+  tasks:
+    - import_tasks: ./tasks/packer-apt/task.yml
+    - import_tasks: ./tasks/sshd/task.yml
+
+    # RemoteDesktop
+    - import_tasks: ./tasks/remote-desktop/task.yml
+
+    # MateriAppsLiv 
+    - import_tasks: ./tasks/materiapps-live/task.yml
+
+    # toolset 
+    - import_tasks: ./tasks/toolset/task.yml
+
+
+    - import_tasks: ./tasks/ubuntu-desktop/task.yml
+    - import_tasks: ./tasks/ubuntu-cleanup/task.yml
+    - import_tasks: ./tasks/passwd-reset/task.yml
+    - import_tasks: ./tasks/vm-shrink/task.yml

@@ -1,0 +1,17 @@
+- name: ubuntu provisioner
+  hosts: default
+  become: yes
+
+  tasks:
+    - import_tasks: ./tasks/packer-apt/task.yml
+    - import_tasks: ./tasks/ntp/task.yml
+    - import_tasks: ./tasks/network-manager/task.yml
+    - import_tasks: ./tasks/cloud-init/task.yml
+    - import_tasks: ./tasks/versioninfo/task.yml
+
+    - import_tasks: ./tasks/mlnx-ofed/task.yml
+    - import_tasks: ./tasks/lustre/task.yml
+
+    - import_tasks: ./tasks/ubuntu-cleanup/task.yml
+    - import_tasks: ./tasks/vm-shrink/task.yml
+

@@ -1,0 +1,4 @@
+## LustreFS ##
+172.17.8.40@o2ib10:172.17.8.41@o2ib10:/fast	/fast		lustre	network=o2ib10,flock,noauto,defaults 0 0
+172.17.8.56@o2ib10:172.17.8.57@o2ib10:/large	/large		lustre	network=o2ib10,flock,noauto,defaults 0 0
+##

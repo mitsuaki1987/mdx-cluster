@@ -1,0 +1,41 @@
+---
+- name: Collect facts
+  hosts: all
+  tasks:
+    - name: Gather facts
+      setup:
+
+- name: Configure NFS on Control Node for /etc/exports
+  hosts: control_nodes
+  become: yes
+  tasks:
+    - name: Add export for compute node to /etc/exports
+      lineinfile:
+        path: /etc/exports
+        line: "/home {{ hostvars[groups['compute_nodes'][0]]['ansible_default_ipv4']['address'] }}(rw,sync,no_root_squash,no_subtree_check)"
+        state: present
+      notify: restart nfs-kernel-server
+
+  handlers:
+    - name: restart nfs-kernel-server
+      service:
+        name: nfs-kernel-server
+        state: restarted
+
+- name: Configure NFS on Compute Nodes for /etc/fstab
+  hosts: compute_nodes
+  become: yes
+  tasks:
+    - name: Add NFS mount to /etc/fstab
+      lineinfile:
+        path: /etc/fstab
+        line: "{{ hostvars[groups['control_nodes'][0]]['ansible_default_ipv4']['address'] }}:/home /home nfs defaults 0 0"
+        state: present
+
+    - name: Ensure NFS is mounted
+      ansible.builtin.mount:
+        path: /home
+        src: "{{ hostvars[groups['control_nodes'][0]]['ansible_default_ipv4']['address'] }}:/home"
+        fstype: nfs
+        opts: defaults
+        state: mounted

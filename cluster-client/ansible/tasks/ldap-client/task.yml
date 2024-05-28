@@ -1,0 +1,26 @@
+- name: Update apt repo
+  apt:
+    update_cache: yes
+
+- name: Preseed debconf for libnss-ldapd and libpam-ldapd
+  debconf:
+    name: "{{ item.name }}"
+    question: "{{ item.question }}"
+    vtype: "{{ item.vtype }}"
+    value: "{{ item.value }}"
+  loop:
+    - { name: 'nslcd', question: 'nslcd/ldap-uris', vtype: 'string', value: 'ldap://127.0.0.1/' }
+    - { name: 'nslcd', question: 'nslcd/ldap-base', vtype: 'string', value: 'dc=example,dc=net' }
+    - { name: 'libnss-ldapd', question: 'nsswitch/move-to-end', vtype: 'boolean', value: 'true' }
+    - { name: 'libpam-ldapd', question: 'libpam-ldapd/override', vtype: 'boolean', value: 'true' }
+
+
+- name: Install slapd using shell
+  become: yes
+  shell: DEBIAN_FRONTEND=noninteractive apt-get install -y libnss-ldapd libpam-ldapd
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+
+
+

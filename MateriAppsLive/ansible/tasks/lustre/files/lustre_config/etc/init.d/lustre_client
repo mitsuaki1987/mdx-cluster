@@ -1,0 +1,261 @@
+#!/bin/bash
+#
+# Starts the lustre client
+#
+#	version 0.4
+#		Add function to set lru_max_age/max_cached_mb locally.
+#		Add LOCAL_MR parameter to identify this client use Multi-Rail or not.
+#               by M.Hamakawa. 10/25/2020
+#	version 0.3
+#               Add function ip_rule_add() and ip_rule_del() which configure/unconfigure ip rule and ip route for MR.
+#               by M.Hamakawa. 08/04/2020
+#	version 0.2
+#		Support MR at client.
+#		by DataDirect Networks Japan. 08/20/2019
+#
+# chkconfig: - 81 87
+# description: Mount Lustre File System 
+# processname: n/a
+#
+### BEGIN INIT INFO
+# Provides:          lustre_client
+# Required-Start:    $network
+# Required-Stop:     $network
+# Should-Start:      $network openibd rdma
+# Should-Stop:       $network openibd rdma
+# Default-Start:     2 3 4 5
+# Default-Stop:
+# Short-Description: Regular background program processing daemon
+# Description:       lustre client
+### END INIT INFO
+
+initdir=/etc/rc.d/init.d
+lockdir=/var/lock/subsys
+sysconfig=/etc/sysconfig
+syspath=/sys/block
+
+RETVAL=0
+
+exit_this() {
+  return 1
+}
+
+# Source function library.
+. /lib/lsb/init-functions
+
+action () {
+  log_action_begin_msg "${1}"
+  ${2}
+  log_action_end_msg ${?}
+}
+
+if [ -f ${sysconfig}/lustre_client ]; then
+  . ${sysconfig}/lustre_client
+else
+  action "please configure ${sysconfig}/lustre_client" exit_this
+  exit 1
+fi
+
+ip_rule_add(){
+  declare -A RULEID=(
+    ["enp59s0f0"]=10
+    ["enp59s0f1"]=11
+    ["ib2"]=12
+    ["ib3"]=13
+  )
+
+  for IF in enp59s0f0 enp59s0f1 ib2 ib3
+  do
+    ip add show $IF > /dev/null 2>&1
+    if [ $? = 0 ]; then
+      IP=$(ip add show $IF | grep -w inet | awk '{print $2}' | sed -e 's|/.*||')
+      NETWORK=$(ip route show dev $IF | grep proto | awk '{print $1}')
+      if [ "x${IP}" != "x" ]; then
+        logger -t ddn_lnet "Setting rule/route for ${IF} from ${IP} to ${NETWORK} as table: ${RULEID["${IF}"]}"
+        ip rule add from ${IP} table ${RULEID["${IF}"]} prio ${RULEID["${IF}"]}
+        ip route add ${NETWORK} dev ${IF} proto kernel scope link src ${IP} table ${RULEID["${IF}"]}
+      fi
+    fi
+  done
+
+  ip route flush cache
+}
+
+ip_rule_del() {
+  declare -A RULEID=(
+    ["enp59s0f0"]=10
+    ["enp59s0f1"]=11
+    ["ib2"]=12
+    ["ib3"]=13
+  )
+
+  for IF in enp59s0f0 enp59s0f1 ib2 ib3
+  do
+    ip add show $IF > /dev/null 2>&1
+    if [ $? = 0 ]; then
+      IP=$(ip add show $IF | grep -w inet | awk '{print $2}' | sed -e 's|/.*||')
+      NETWORK=$(ip route show dev $IF | grep proto | awk '{print $1}')
+      if [ "x${IP}" != "x" ]; then
+        logger -t ddn_lnet "Removing rule/route for ${IF} from ${IP} to ${NETWORK} as table: ${RULEID["${IF}"]}"
+        ip route del ${NETWORK} dev ${IF} src ${IP} table ${RULEID["${IF}"]}
+        ip rule del from ${IP}
+      fi
+    fi
+  done
+
+  ip route flush cache
+}
+
+killing_proc() {
+  TGT_MOUNT=$1
+  #Checking active process on ${TGT_MOUNT} then kill those
+  for PID in `/usr/bin/lsof ${TGT_MOUNT}|grep -v PID|awk '{print $2}'`
+  do
+    echo "killing process: $PID"
+    kill -9 ${PID}
+  done
+
+  #Again just in case
+  for PID in `/usr/bin/lsof ${TGT_MOUNT}|grep -v PID|awk '{print $2}'`
+  do
+    echo "$PID"
+    kill -9 ${PID}
+  done
+}
+
+mount_lustre() {
+        logger -t lustre_client "Starting mount lustre"
+        for (( I = 0; I < ${#LUSTRE[@]}; ++I ))
+        do
+          if [ ! -d ${LUSTRE[$I]} ]; then
+            mkdir ${LUSTRE[$I]}
+          fi
+        done
+        count=1
+        IBSTAT=FALSE
+        while [ ${IBSTAT} = "FALSE" ]
+        do
+          /bin/ping -c 1 -W 3 ${MDS1} > /dev/console 2>&1
+          ret1=$?
+          /bin/ping -c 1 -W 3 ${MDS2} > /dev/console 2>&1
+          ret2=$?
+          ret=`expr ${ret1} + ${ret2}`
+          if [ ${ret} -le 1 ]; then
+             logger -t lustre_client "Can reach ${MDS1} or ${MDS2}"
+             IBSTAT=TRUE
+          fi
+          count=`expr ${count} + 1`
+          if [ ${count} =  ${RETRY_COUNT} ]; then
+             return 1
+             IBSTAT=TRUE
+          fi
+          sleep ${RETRY_INTERVAL}
+        done
+        ## For Multi-Rail
+        if [ ${MR} = "YES" ]; then
+          if [ -f /etc/lnet.conf.ddn ]; then
+            logger -t lustre_client "Load lnet and import configuretion from /etc/lnet.conf.ddn because this node is configured as MR"
+            /usr/sbin/modprobe lnet
+            /usr/sbin/lnetctl lnet configure
+            /usr/sbin/lnetctl import /etc/lnet.conf.ddn 
+          else
+            echo "ERROR: Please configure /etc/lnet.conf.ddn when you use Multi-Rail function."
+            logger -t lustre_client "ERROR: Please configure /etc/lnet.conf.ddn when you use Multi-Rail function."
+            return 1
+          fi
+          ##Add IP RULE/ROUTE
+          if [ ${LOCAL_MR} = "YES" ] ;then
+            ip_rule_add
+          fi
+        fi
+        ret_all=0
+        for (( I = 0; I < ${#LUSTRE[@]}; ++I ))
+        do
+          logger -t lustre_client "Starting to mount ${LUSTRE[$I]}.."
+          printf "Mounting ${LUSTRE[$I]}..."
+          mount ${LUSTRE[$I]}
+          ret=$?
+          ret_all=`expr ${ret_all} + ${ret}`
+          if [ ${ret} = 0 ]; then
+            echo "[OK]";
+          fi
+        done
+        if [ "a${lru_max_age}" != "a" ]; then
+          if [ ${lru_max_age} != 0 ];then
+            logger -t lustre_client "Setting lru_max_age as ${lru_max_age}"
+            lctl set_param ldlm.namespaces.*.lru_max_age=${lru_max_age}
+            for vv in `lctl get_param ldlm.namespaces.*.lru_max_age`
+            do
+              logger -t lustre_client "${vv}"
+            done
+          fi
+        fi
+        if [ "a${max_cached_mb}" != "a" ]; then
+          if [ ${max_cached_mb} != 0 ];then
+            logger -t lustre_client "Setting max_cached_mb as ${max_cached_mb}"
+            lctl set_param llite.*.max_cached_mb=${max_cached_mb}
+            for vv in `lctl get_param llite.*.max_cached_mb`
+            do
+              logger -t lustre_client "${vv}"
+            done
+          fi
+        fi
+        return ${ret_all}
+}
+
+umount_lustre() {
+        for (( I = 0; I < ${#LUSTRE[@]}; ++I ))
+        do
+          killing_proc ${LUSTRE[$I]}          
+        done
+        umount -t lustre -a
+        if [ ${MR} = "YES" ]; then
+          /usr/sbin/lustre_rmmod ptlrpc
+          /usr/sbin/lnetctl lnet unconfigure
+          ##Remove IP RULE/ROUTE
+          if [ ${LOCAL_MR} = "YES" ] ;then
+            ip_rule_del
+          fi
+        fi
+        lustre_rmmod > /dev/null
+        if [ `/usr/sbin/lctl modules|wc -l` != 0 ]; then
+          sleep 1
+          lustre_rmmod
+        fi
+        return $?
+}
+
+start() {
+        test -x $DAEMON || exit 5
+        action $"Starting Lustre: " mount_lustre
+        RETVAL=$?
+        [ $RETVAL -eq 0 ] && touch $lockdir/lustre_client
+}
+
+stop() {
+        action $"Stopping Lustre: " umount_lustre
+        RETVAL=$?
+        [ $RETVAL -eq 0 ] && rm -f $lockdir/lustre_client
+}
+
+restart() {
+        stop
+        start
+}       
+
+case "$1" in
+start)
+        start
+        ;;
+stop)
+        stop
+        ;;
+restart)
+        restart
+        ;;
+*)
+        echo $"Usage: $0 {start|stop|restart}"
+        RETVAL=3
+esac
+
+exit $RETVAL

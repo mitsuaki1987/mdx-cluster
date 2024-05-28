@@ -1,0 +1,9 @@
+# Ansible managed: /etc/hosts on {{ ansible_fqdn }}
+127.0.0.1   localhost
+::1         localhost ip6-localhost ip6-loopback
+
+{% for host in groups['all'] %}
+{% if host != inventory_hostname %}
+{{ hostvars[host]['ansible_host'] }} {{ host }}
+{% endif %}
+{% endfor %}

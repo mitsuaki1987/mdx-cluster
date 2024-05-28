@@ -1,0 +1,7 @@
+- name: install dependent packages
+  apt:
+    update_cache: yes
+    name:
+    - nfs-common
+
+

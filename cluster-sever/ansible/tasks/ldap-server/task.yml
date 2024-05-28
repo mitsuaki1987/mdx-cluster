@@ -1,0 +1,42 @@
+- name: Update apt repo
+  apt:
+    update_cache: yes
+
+- name: Set debconf selections for slapd
+  ansible.builtin.debconf:
+    name: slapd
+    question: "{{ item.question }}"
+    vtype: "{{ item.vtype }}"
+    value: "{{ item.value }}"
+  loop:
+    - { question: 'slapd/internal/adminpw', vtype: 'password', value: 'mdxuser2204' }
+    - { question: 'slapd/internal/generated_adminpw', vtype: 'password', value: 'mdxuser2204' }
+    - { question: 'slapd/password2', vtype: 'password', value: 'mdxuser2204' }
+    - { question: 'slapd/password1', vtype: 'password', value: 'mdxuser2204' }
+    - { question: 'slapd/domain', vtype: 'string', value: 'example.com' } # 仮のドメイン名
+    - { question: 'slapd/organization', vtype: 'string', value: 'ExampleOrg' } # 仮の組織名を追加
+    - { question: 'slapd/backend', vtype: 'select', value: 'MDB' }
+    - { question: 'slapd/purge_database', vtype: 'boolean', value: 'false' }
+    - { question: 'slapd/move_old_database', vtype: 'boolean', value: 'true' }
+    - { question: 'slapd/allow_ldap_v2', vtype: 'boolean', value: 'false' }
+    - { question: 'slapd/no_configuration', vtype: 'boolean', value: 'false' }
+
+
+- name: Install slapd using shell
+  become: yes
+  shell: DEBIAN_FRONTEND=noninteractive apt-get install -y slapd
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Install ldap-utils using shell
+  become: yes
+  shell: DEBIAN_FRONTEND=noninteractive apt-get install -y ldap-utils
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Install ldap-account-manager libnss-ldapd libpam-ldapd using shell
+  become: yes
+  shell: DEBIAN_FRONTEND=noninteractive apt-get install -y ldap-account-manager libnss-ldapd libpam-ldapd
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+

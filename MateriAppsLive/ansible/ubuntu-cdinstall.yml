@@ -1,0 +1,7 @@
+- name: ubuntu provisioner
+  hosts: default
+  become: yes
+
+  tasks:
+    - import_tasks: ./tasks/packer-apt/task.yml
+

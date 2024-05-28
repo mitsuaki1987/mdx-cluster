@@ -1,0 +1,87 @@
+- name: get lustre-client sources
+  get_url:
+    url: http://172.16.2.26/lustre-2.14.0_ddn93.tar.gz
+    dest: /tmp/lustre-2.14.0_ddn93.tar.gz
+
+- name: install dependent packages
+  apt:
+    update_cache: yes
+    name:
+    - build-essential
+    - linux-headers-generic
+    - libkeyutils-dev
+    - libmount-dev
+    - libyaml-dev
+    - libssl-dev
+    - libjson-c-dev
+    - zlib1g-dev
+
+    - module-assistant
+    - libreadline-dev
+    - libsnmp-dev
+
+      #    - libtool
+      #    - flex
+      #    - bison
+      #    - mpi-default-dev
+      #    - libselinux1-dev
+      #    - mpi-default-dev
+      #    - debhelper
+      #    - dpatch
+      #    - quilt
+
+- name: unarchive lustre-client files
+  shell: tar zxvf /tmp/lustre-2.14.0_ddn93.tar.gz -C /tmp/
+
+- name: compile lustre packages
+  shell: |
+    cd /tmp/lustre-2.14.0_ddn93
+    sh autogen.sh
+    ./configure --with-linux=/usr/src/linux-headers-$(uname -r) --with-o2ib=/usr/src/ofa_kernel/default --disable-server --disable-lru-resize
+    make dkms-debs
+
+- name: install lustre deb packages
+  apt:
+    deb: "{{ item }}"
+  with_items:
+    - /tmp/lustre-2.14.0_ddn93/debs/lustre-client-modules-dkms_2.14.0-ddn93-1_amd64.deb
+    - /tmp/lustre-2.14.0_ddn93/debs/lustre-client-utils_2.14.0-ddn93-1_amd64.deb
+
+- name: set up fstab
+  blockinfile:
+    path: /etc/fstab
+    block: |
+      # lustre (tcp)
+      #172.17.8.40@tcp10:172.17.8.41@tcp10:/fast      /fast           lustre  network=tcp10,flock,noauto,defaults 0 0
+      #172.17.8.56@tcp10:172.17.8.57@tcp10:/large     /large          lustre  network=tcp10,flock,noauto,defaults 0 0
+      # lustre (rdma)
+      #172.17.8.40@o2ib10:172.17.8.41@o2ib10:/fast    /fast           lustre  network=o2ib10,flock,noauto,defaults 0 0
+      #172.17.8.56@o2ib10:172.17.8.57@o2ib10:/large   /large          lustre  network=o2ib10,flock,noauto,defaults 0 0
+
+- name: mkdir for lustre configs
+  file: path=/etc/sysconfig state=directory owner=root group=root mode=0755
+
+- name: copy lustre configs
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: ./files/lustre_config/etc/lnet.conf.ddn.j2, dest: /etc/lnet.conf.ddn.j2 }
+    - { src: ./files/lustre_config/etc/sysconfig/lustre_client, dest: /etc/sysconfig/lustre_client }
+    - { src: ./files/lustre_config/etc/modprobe.d/lustre.conf, dest: /etc/modprobe.d/lustre.conf }
+    - { src: ./files/lustre_config/etc/init.d/lustre_client, dest: /etc/init.d/lustre_client }
+    - { src: ./files/lustre_config/usr/lib/systemd/system/lustre_client.service, dest: /usr/lib/systemd/system/lustre_client.service }
+
+- name: file permissions
+  file:
+    path: "{{ item }}"
+    mode: '0755'
+  with_items:
+    - /etc/init.d/lustre_client
+
+- name: rm lustre-client sources
+  command: rm -rf /tmp/lustre-2.14.0_ddn93
+
+- name: apt clean
+  shell: apt clean
+

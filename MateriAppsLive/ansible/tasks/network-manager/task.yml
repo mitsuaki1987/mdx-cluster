@@ -1,0 +1,38 @@
+- name: remove /etc/netplan/00-installer-config.yaml
+  file:
+    path: /etc/netplan/00-installer-config.yaml
+    state: absent
+    #path: /etc/netplan/50-cloud-init.yaml
+
+- name: disable IPv6 temporary address
+  blockinfile:
+    path: /etc/sysctl.conf
+    block: |
+      net.ipv6.conf.all.use_tempaddr=0
+      net.ipv6.conf.default.use_tempaddr=0
+
+- name: install dependencies
+  become: true
+  apt:
+    name: network-manager
+    update_cache: true
+
+- name: create new netplan config file
+  become: true
+  blockinfile:
+    path: /etc/netplan/55-mdx.yaml
+    create: yes
+    marker: ""
+    block: |
+      network:
+        version: 2
+        renderer: NetworkManager
+
+- name: enable NetworkManager
+  become: true
+  systemd:
+    name: NetworkManager
+    enabled: true
+
+- name: apply netplan
+  command: netplan apply

@@ -1,0 +1,3 @@
+- name: delete and expire mdxuser password
+  shell: /usr/bin/passwd -d -e mdxuser
+  ignore_errors: yes

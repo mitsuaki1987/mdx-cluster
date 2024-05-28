@@ -1,0 +1,18 @@
+[Unit]
+Description=lustre_client - mount/umount LustreFS
+Documentation=file:/etc/infiniband/openib.conf
+Requires=network-online.target
+After=network-online.target openibd.service rdma.service
+RefuseManualStop=false
+DefaultDependencies=yes
+
+[Service]
+Type=oneshot
+TimeoutSec=300
+RemainAfterExit=yes
+ExecStart=/etc/init.d/lustre_client start 
+ExecStop=/etc/init.d/lustre_client stop
+ExecReload=/etc/init.d/lustre_client restart 
+
+[Install]
+WantedBy=multi-user.target openibd.service

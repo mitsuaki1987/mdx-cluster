@@ -1,0 +1,47 @@
+#++++++++++++++++++++++++++++++++++++
+# IP Addresses of Primary/Standby MDS
+#
+MDS1="172.17.8.40"
+MDS2="172.17.8.41"
+
+#++++++++++++++++++++++++++++++++++++
+# Mount Point of LustreFS
+LUSTRE=("/fast" "/large")
+
+#++++++++++++++++++++++++++++++++++++
+# Retry Count to check if IB is up or not
+# w/ opainfo cmd  
+RETRY_COUNT=60
+
+#++++++++++++++++++++++++++++++++++++
+# Retry Interval between each ping cmd
+# (sec)
+RETRY_INTERVAL=2
+
+#++++++++++++++++++++++++++++++++++++
+# Number of HFI Intervaces on this node
+#NUM_HFI=2
+
+#++++++++++++++++++++++++++++++++++++
+# Using Multi-Rail on MDS/OSS or not
+# Please set YES if MR is configured on MDS/OSS and in case lnet_peer_discovery_disabled=1
+#   YES: /etc/lnet.conf.ddn is required
+MR=YES
+
+#++++++++++++++++++++++++++++++++++++
+# Using Multi-Rail on local
+# Please set YES if this node uses Multi-Rail for single LNET.
+#   YES: ip rule/ip route are automatically defined.
+LOCAL_MR=NO
+
+#++++++++++++++++++++++++++++++++++++
+# lru_max_age
+#  0: Use MGS defined value for lru_max_age
+#  value: Set value as lru_max_age only on this node (msec)
+lru_max_age=0
+
+#++++++++++++++++++++++++++++++++++++
+# max_cached_mb
+#  0: Use MGS defined value for max_cached_mb
+#  value: Set value as max_cached_mb only on this node(MB)
+max_cached_mb=0

@@ -1,0 +1,9 @@
+- name: install dependent packages
+  apt:
+    update_cache: yes
+    name:
+    - nfs-kernel-server
+
+- name: apt clean
+  shell: apt clean
+

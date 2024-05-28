@@ -1,0 +1,9 @@
+- name: Deploy mdx-image-id
+  vars:
+    image_version: "2024.2"
+  template:
+    src: image_version.txt.j2
+    dest: /etc/mdx-image-id
+    owner: root
+    group: root
+    mode: '0644'

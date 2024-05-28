@@ -1,0 +1,5 @@
+#!/bin/bash
+uid=$1
+server=ldap://{{ control_node_ip }}
+baseDN="ou=People,dc=example,dc=com"
+ldapsearch -x -H $server -b $baseDN -s sub "(&(objectclass=posixAccount)(uid=$uid))" | sed -n '/^ /{H;d};/sshPublicKey:/x;$g;s/\n *//g;s/sshPublicKey: //gp'

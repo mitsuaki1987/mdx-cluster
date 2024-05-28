@@ -1,0 +1,10 @@
+- name: install ubuntu-desktop package
+  apt:
+    update_cache: yes
+    name:
+    - ubuntu-desktop
+    - firefox
+
+- name: apt clean
+  shell: apt clean
+

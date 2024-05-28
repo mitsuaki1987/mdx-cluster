@@ -1,0 +1,14 @@
+- name: Update and upgrade apt packages
+  become: true
+  apt:
+    upgrade: yes
+    update_cache: yes
+    cache_valid_time: 86400
+
+- name: install open-vm-tools
+  apt:
+    update_cache: yes
+    name: open-vm-tools
+
+- name: disable auto updates
+  command: sed -i -e "s/\"1\"/\"0\"/" /etc/apt/apt.conf.d/20auto-upgrades

@@ -1,0 +1,26 @@
+- name: ubuntu-cluster-desktop provisioner
+  hosts: default
+  become: yes
+
+  tasks:
+    - import_tasks: ./tasks/packer-apt/task.yml
+    - import_tasks: ./tasks/sshd/task.yml
+
+    # RemoteDesktop
+    # - import_tasks: ./tasks/remote-desktop/task.yml
+
+    # LDAP-client
+    - import_tasks: ./tasks/ldap-client/task.yml
+    # NFS-client
+    - import_tasks: ./tasks/nfs-client/task.yml
+    # SLURM
+    - import_tasks: ./tasks/slurm/task.yml
+
+    # toolset 
+    - import_tasks: ./tasks/toolset/task.yml
+
+
+    - import_tasks: ./tasks/ubuntu-desktop/task.yml
+    - import_tasks: ./tasks/ubuntu-cleanup/task.yml
+    - import_tasks: ./tasks/passwd-reset/task.yml
+    - import_tasks: ./tasks/vm-shrink/task.yml

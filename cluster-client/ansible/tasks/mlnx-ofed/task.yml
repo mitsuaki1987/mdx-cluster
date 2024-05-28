@@ -1,0 +1,37 @@
+- name: add OFED apt-key
+  apt_key:
+    url: http://www.mellanox.com/downloads/ofed/RPM-GPG-KEY-Mellanox
+    state: present
+
+- name: get a ofed-src file
+  get_url:
+    url: https://content.mellanox.com/ofed/MLNX_OFED-5.8-3.0.7.0/MLNX_OFED_LINUX-5.8-3.0.7.0-ubuntu22.04-x86_64.tgz
+    dest: /tmp/MLNX_OFED_LINUX-5.8-3.0.7.0-ubuntu22.04-x86_64.tgz
+
+- name: install dependent packages
+  apt:
+    update_cache: yes
+    name:
+    - build-essential
+
+- name: unarchive the ofed file
+  shell: tar zxvf /tmp/MLNX_OFED_LINUX-5.8-3.0.7.0-ubuntu22.04-x86_64.tgz -C /tmp/
+
+- name: install ofed packages
+  shell: |
+    cd /tmp/MLNX_OFED_LINUX-5.8-3.0.7.0-ubuntu22.04-x86_64
+    ./mlnxofedinstall --guest --force
+
+- name: apt clean
+  shell: apt clean
+
+- name: remove the ofed installer
+  file:
+    path: /tmp/MLNX_OFED_LINUX-5.8-3.0.7.0-ubuntu22.04-x86_64.tgz
+    state: absent
+
+- name: remove the ofed installer directory
+  file:
+    path: /tmp/MLNX_OFED_LINUX-5.8-3.0.7.0-ubuntu22.04-x86_64
+    state: absent
+

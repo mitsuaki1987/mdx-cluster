@@ -1,0 +1,136 @@
+
+- name: OS codename
+  command: lsb_release -c -s
+  register: os_codename
+  changed_when: false
+
+- name: Add MateriAppsLIVE! repository
+  apt_repository:
+    repo: "deb [trusted=yes] http://exa.phys.s.u-tokyo.ac.jp/archive/MateriApps/apt/{{ os_codename.stdout }} {{ os_codename.stdout }} main non-free contrib"
+    state: present
+    filename: materiapps-{{ os_codename.stdout }}
+    update_cache: yes
+
+- name: Add MateriAppsLIVE! source repository
+  apt_repository:
+    repo: "deb-src [trusted=yes] http://exa.phys.s.u-tokyo.ac.jp/archive/MateriApps/apt/{{ os_codename.stdout }} {{ os_codename.stdout }} main non-free contrib"
+    state: present
+    filename: materiapps-{{ os_codename.stdout }}
+
+- name: Install materiapps-keyring package
+  apt:
+    name: materiapps-keyring
+    state: present
+    update_cache: yes
+    allow_unauthenticated: yes
+
+- name: Updating Package List
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: package installation
+  apt:
+    name: "{{ item }}"
+    state: present
+    install_recommends: no
+  loop:
+    - dx
+    - grace
+    - h5utils
+    - bsa
+    - fermisurfer
+    - libalpscore-dev
+    - physbo
+    - tapioca
+    - abinit
+    - akaikkr
+    - alamode
+    - casino-setup
+    - cif2cell
+    - conquest
+    - c-tools
+    - quantum-espresso
+    - quantum-espresso-data
+    - openmx
+    - openmx-data
+    - openmx-example
+    - respack
+    - salmon-tddft
+    - xtapp
+    - xtapp-ps
+    - xtapp-util
+    - gamess-setup
+    - smash
+    - gromacs
+    - gromacs-data
+    - gromacs-mpi
+    - lammps
+    - lammps-data
+    - lammps-examples
+    - octa
+    - octa-data
+    - alps-applications
+    - alps-tutorials
+    - ddmrg
+    - dsqss
+    - hphi
+    - mvmc
+    - tenes
+    - triqs
+    - triqs-cthyb
+    - triqs-dfttools
+    - triqs-hubbardi
+    - dcore
+    - cp2k
+    - cp2k-data
+    - xcrysden
+    - vesta
+    - vmd-setup
+
+
+- name: Setting Environment Variables
+  lineinfile:
+    path: /etc/skel/.bashrc
+    line: "{{ item }}"
+  loop:
+    - 'export PATH=$HOME/bin:$PATH'
+    - 'export OMP_NUM_THREADS=1'
+    - 'export OMPI_MCA_btl_vader_single_copy_mechanism=none'
+    - 'export LIBGL_ALWAYS_INDIRECT=1'
+
+- name: Disabling Aliases and Syntax
+  lineinfile:
+    path: /etc/skel/.bashrc
+    line: "{{ item }}"
+  loop:
+    - 'unalias ls'
+
+- name: Disabling Syntax in .vimrc
+  copy:
+    content: "syntax off"
+    dest: /etc/skel/.vimrc
+
+- name: Create .emacs.d directory
+  file:
+    path: /etc/skel/.emacs.d
+    state: directory
+    mode: '0755'
+
+- name: Initial configuration of Emacs
+  file:
+    path: /etc/skel/.emacs.d/init.el
+    state: touch
+
+- name: Configuring Emacs in init.el
+  blockinfile:
+    path: /etc/skel/.emacs.d/init.el
+    block: |
+      (setq inhibit-startup-screen t)
+      (setq default-frame-alist '((height . 24)))
+
+- name: Setting version information
+  copy:
+    content: "4.1"
+    dest: /etc/malive_version
+
