@@ -23,3 +23,13 @@ ssh -L 8080:localhost:80 mdxuser@163.220.177.102
 ```
 などとして、ローカルのブラウザ上で
 http://localhost:8080/lam/
+
+作成したユーザーが動いているか確かめるとき
+``` bash
+sudo su - testuser
+```
+ssh公開鍵も配置すると良い。また、同時にクラスター内での公開鍵の配置も行う。
+``` bash
+ssh-keyge
+cat .ssh/id_rsa.pub >> .ssh/authorized_keys
+```
