@@ -8,6 +8,14 @@
         src: hosts.j2
         dest: /etc/hosts
 
+- name: Set hostnames for compute nodes
+  hosts: compute_nodes
+  become: yes
+  tasks:
+    - name: Set hostname based on inventory hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+
 - name: Configure SLURM for Control and Compute Nodes
   hosts: all
   become: yes
