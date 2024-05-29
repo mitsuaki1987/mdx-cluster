@@ -13,16 +13,17 @@
 ``` bash
 sudo systemctl restart NetworkManager.service
 ```
-これをしないとつぎのaptの実行に失敗する。
+これをしないと次のaptの実行に失敗する。
 
 ログインノードにansibleを入れる
 ``` bash
 sudo apt install ansible -y
 ```
+※ これはテンプレートに含めるべきではないか？
 
 ログインノードでssh鍵を作る
 ``` bash
-ssh-keyge
+ssh-keygen
 cat .ssh/id_rsa.pub >> .ssh/authorized_keys
 ```
 この公開鍵を各計算ノードに配置する。
@@ -43,6 +44,6 @@ sudo su - testuser
 ```
 で確かめるときに、ssh公開鍵も配置すると良い。また、同時にクラスター内での公開鍵の配置も行う。
 ``` bash
-ssh-keyge
+ssh-keygen
 cat .ssh/id_rsa.pub >> .ssh/authorized_keys
 ```
